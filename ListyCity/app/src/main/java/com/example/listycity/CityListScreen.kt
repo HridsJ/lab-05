@@ -168,6 +168,7 @@ fun CityListScreen(
                 }
             }
         }
+        
         // have city column hug the existing height to prevent button pushed down bug
         LazyColumn(modifier = Modifier.weight(1f)) {
             itemsIndexed(cities) { index, city ->
