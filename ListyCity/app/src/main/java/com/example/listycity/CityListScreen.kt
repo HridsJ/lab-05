@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,12 +27,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.listycity.ui.theme.ListyCityTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun CityListScreen(
     cities: List<City>,
     onAddCity: (City) -> Unit,
     onUpdateCity: (City, City) -> Unit,
+    onDeleteCity: (City) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var newCityName by remember { mutableStateOf("") }
@@ -40,6 +46,8 @@ fun CityListScreen(
     var selectedCity by remember { mutableStateOf<City?>(null) }
     var editedCityName by remember { mutableStateOf("") }
     var editedProvinceName by remember { mutableStateOf("") }
+    var pressedDeleteButton by remember { mutableStateOf(false) }
+    var deletedCityName by remember { mutableStateOf<City?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -49,6 +57,9 @@ fun CityListScreen(
             FloatingActionButton(
                 modifier = Modifier.padding(16.dp),
                 onClick = {
+                    // so we dont have delete and add button at the same time,
+                    // i dont even want to imagine the possible bugs
+                    pressedDeleteButton = false
                     showAddCityFields = !showAddCityFields
                     if (showAddCityFields) {
                         selectedCity = null
@@ -60,6 +71,7 @@ fun CityListScreen(
                 Text("+")
             }
         }
+        // add city
         if (showAddCityFields) {
             Row(
                 modifier = Modifier
@@ -104,6 +116,7 @@ fun CityListScreen(
                 }
             }
         }
+        // update city
         if (selectedCity != null) {
             Row(
                 modifier = Modifier
@@ -155,17 +168,22 @@ fun CityListScreen(
                 }
             }
         }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        // have city column hug the existing height to prevent button pushed down bug
+        LazyColumn(modifier = Modifier.weight(1f)) {
             itemsIndexed(cities) { index, city ->
                 CityRow(
                     city = city,
                     onClick = {
-                        showAddCityFields = false
-                        newCityName = ""
-                        newProvinceName = ""
-                        selectedCity = city
-                        editedCityName = city.name
-                        editedProvinceName = city.province
+                        if (!pressedDeleteButton) {
+                            showAddCityFields = false
+                            newCityName = ""
+                            newProvinceName = ""
+                            selectedCity = city
+                            editedCityName = city.name
+                            editedProvinceName = city.province
+                        } else {
+                            deletedCityName = city
+                        }
                     }
                 )
                 if (index < cities.lastIndex) {
@@ -173,6 +191,51 @@ fun CityListScreen(
                 }
             }
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(
+                onClick = {
+                    pressedDeleteButton = !pressedDeleteButton
+                    selectedCity = null
+                    showAddCityFields = false
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+            ) {
+                if (!pressedDeleteButton) {
+                    Text("Delete City")
+                } else {
+                    Text("Cancel delete")
+                }
+            }
+        }
+    }
+    if (deletedCityName!= null) {
+        AlertDialog(
+            onDismissRequest = { deletedCityName = null },
+            title = { Text("Delete City")},
+            text = { Text("Would you like to delete ${deletedCityName?.name}, ${deletedCityName?.province}?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // since we check if this is null before we even give them the option
+                        onDeleteCity(deletedCityName!!)
+                        deletedCityName = null
+                        pressedDeleteButton = false
+                    }
+                ) {
+                    Text("Confirm Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    deletedCityName = null
+                }) {
+                    Text("CANCEL")
+                }
+            }
+        )
     }
 }
 
@@ -213,7 +276,9 @@ fun CityListScreenPreview() {
                 City("Calgary", "AB")
             ),
             onAddCity = {},
-            onUpdateCity = { _, _ -> }
+            onUpdateCity = { _, _ -> },
+            //maybe some change here for delete city
+            onDeleteCity = {}
         )
     }
 }

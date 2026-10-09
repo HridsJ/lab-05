@@ -27,7 +27,7 @@ class CityRepository {
 
             // ? helps deal with it even if its empty/null
             snapshot?.documents?.forEach { document ->
-                // why did we use :: , i know its to convert document to city object though
+                // why did we use :: , I know it's to convert document to city object though
                 val city = document.toObject(City::class.java)
                 if (city != null) {
                     _cities.add(city)
@@ -46,5 +46,9 @@ class CityRepository {
 
     fun updateCity(oldCity: City, updatedCity: City) {
         citiesRef.document(oldCity.name).set(updatedCity)
+    }
+
+    fun deleteCity(city: City) {
+        citiesRef.document(city.name).delete()
     }
 }
